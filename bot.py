@@ -4,7 +4,7 @@ import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from oauth2client.service_account import ServiceAccountCredentials
 import gspread
-
+print("TOKEN:", os.getenv("TELEGRAM_TOKEN"))
 bot = telebot.TeleBot(os.getenv("TELEGRAM_TOKEN"))
 
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
