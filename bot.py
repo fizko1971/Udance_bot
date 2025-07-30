@@ -170,3 +170,4 @@ def get_email(message):
 🎁 Промокод: `{promo}`""", parse_mode="Markdown")
 
 bot.infinity_polling()
+print("TEST_VAR:", os.environ.get("TEST_VAR"))
