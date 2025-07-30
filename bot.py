@@ -8,11 +8,13 @@ from oauth2client.service_account import ServiceAccountCredentials
 print("TOKEN:", os.getenv("TELEGRAM_TOKEN"))
 
 # 1. Читання токена
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-if TELEGRAM_TOKEN is None:
+token = os.environ.get("token")  # має збігатися з ключем у Railway
+if not token:
     raise Exception("TELEGRAM_TOKEN is not set")
 
-bot = telebot.TeleBot(TELEGRAM_TOKEN)
+print("TOKEN:", token)  # тимчасово для перевірки
+
+bot = telebot.TeleBot(token)
 
 # 2. Підключення до Google Sheets
 GOOGLE_CREDS = os.getenv("GOOGLE_CREDS")
