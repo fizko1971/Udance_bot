@@ -8,11 +8,11 @@ from oauth2client.service_account import ServiceAccountCredentials
 print("TOKEN:", os.getenv("TELEGRAM_TOKEN"))
 
 # 1. Читання токена
-token = os.environ.get("token")  # має збігатися з ключем у Railway
+token = os.environ.get("TELEGRAM_TOKEN")  # має збігатися з ключем у Railway
 if not token:
     raise Exception("TELEGRAM_TOKEN is not set")
 
-print("TOKEN:", token)  # тимчасово для перевірки
+print("TELEGRAM_TOKEN:", token)  # тимчасово для перевірки
 
 bot = telebot.TeleBot(token)
 
