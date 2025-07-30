@@ -16,8 +16,7 @@ bot = telebot.TeleBot(TELEGRAM_TOKEN)
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 import json
 creds = ServiceAccountCredentials.from_json_keyfile_dict(
-    json.loads(os.getenv("GOOGLE_CREDENTIALS_JSON")), scope
-)
+    json.loads(os.getenv("GOOGLE_CREDS")), scope)
 client = gspread.authorize(creds)
 sheet = client.open_by_key(GOOGLE_SHEET_ID).worksheet("Udance25_26")
 
