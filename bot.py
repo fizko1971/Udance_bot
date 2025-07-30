@@ -1,4 +1,5 @@
 import os
+print("TEST_VAR:", os.getenv("TEST_VAR"))
 import json
 import telebot
 import gspread
@@ -170,4 +171,3 @@ def get_email(message):
 🎁 Промокод: `{promo}`""", parse_mode="Markdown")
 
 bot.infinity_polling()
-print("TEST_VAR:", os.environ.get("TEST_VAR"))
