@@ -1,19 +1,41 @@
 import os
 import json
 import telebot
-from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-from oauth2client.service_account import ServiceAccountCredentials
 import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+# DEBUG — перевірка токена (можна потім прибрати)
 print("TOKEN:", os.getenv("TELEGRAM_TOKEN"))
-bot = telebot.TeleBot(os.getenv("TELEGRAM_TOKEN"))
 
-scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_dict(
-    json.loads(os.getenv("credentials.json")), scope)
-client = gspread.authorize(creds)
+# 1. Читання токена
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+if TELEGRAM_TOKEN is None:
+    raise Exception("TELEGRAM_TOKEN is not set")
 
-SPREADSHEET_ID = os.getenv("GOOGLE_SHEET_ID")
-sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Udance25_26")
+bot = telebot.TeleBot(TELEGRAM_TOKEN)
+
+# 2. Підключення до Google Sheets
+GOOGLE_CREDS = os.getenv("GOOGLE_CREDS")
+GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
+
+if not GOOGLE_CREDS or not GOOGLE_SHEET_ID:
+    raise Exception("GOOGLE_CREDS або GOOGLE_SHEET_ID не встановлені")
+
+creds_dict = json.loads(GOOGLE_CREDS)
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+credentials = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+client = gspread.authorize(credentials)
+
+# 3. Відкриваємо перший лист таблиці
+sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
+
+# 4. Проста реакція на /start
+@bot.message_handler(commands=["start"])
+def start_handler(message):
+    bot.send_message(message.chat.id, "Бот успішно запущений!")
+
+# 5. Запуск бота
+bot.infinity_polling()
 
 user_data = {}
 
