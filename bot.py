@@ -1,10 +1,9 @@
-import telebot
 import os
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from dotenv import load_dotenv
+import json
+import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
-import random
+from oauth2client.service_account import ServiceAccountCredentials
+import gspread
 
 load_dotenv("udance_bot/config.env")
 
@@ -13,8 +12,7 @@ GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
-scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-import json
+scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 creds = ServiceAccountCredentials.from_json_keyfile_dict(
     json.loads(os.getenv("GOOGLE_CREDS")), scope)
 client = gspread.authorize(creds)
