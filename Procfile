@@ -1,1 +1,1 @@
-python udance_bot/bot.py
+start: python udance_bot/bot.py
