@@ -5,22 +5,19 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 from oauth2client.service_account import ServiceAccountCredentials
 import gspread
 
-load_dotenv("udance_bot/config.env")
-
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
-
-bot = telebot.TeleBot(TELEGRAM_TOKEN)
+bot = telebot.TeleBot(os.getenv("TELEGRAM_TOKEN"))
 
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
 creds = ServiceAccountCredentials.from_json_keyfile_dict(
-    json.loads(os.getenv("GOOGLE_CREDS")), scope)
+    json.loads(os.getenv("credentials.json")), scope)
 client = gspread.authorize(creds)
-sheet = client.open_by_key(GOOGLE_SHEET_ID).worksheet("Udance25_26")
 
-ADMIN_ID = os.getenv("ADMIN_ID")
+SPREADSHEET_ID = os.getenv("GOOGLE_SHEET_ID")
+sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Udance25_26")
 
-EVENTS = [
+user_data = {}
+
+events_list = [
     "18-19.10.2025 Global Talent Lviv 2025",
     "9.11.2025 Global Talent Odesa 2025",
     "15.11.2025 Global Talent Cherkasy 2025",
@@ -45,109 +42,107 @@ EVENTS = [
     "30-31.05.2026 Global Talent Superfinal 2025"
 ]
 
-user_data = {}
+def generate_event_keyboard():
+    keyboard = InlineKeyboardMarkup(row_width=1)
+    buttons = [InlineKeyboardButton(text=e, callback_data=f"event_{i}") for i, e in enumerate(events_list)]
+    done = InlineKeyboardButton("✅ Завершити вибір", callback_data="done")
+    keyboard.add(*buttons)
+    keyboard.add(done)
+    return keyboard
 
-@bot.message_handler(commands=["start"])
+@bot.message_handler(commands=['start'])
 def start(message):
     chat_id = message.chat.id
-    user_data[chat_id] = {"events": []}
-    markup = InlineKeyboardMarkup(row_width=1)
-    for event in EVENTS:
-        markup.add(InlineKeyboardButton(event, callback_data=event))
-    markup.add(InlineKeyboardButton("✅ Завершити вибір", callback_data="done"))
-    bot.send_message(chat_id, "🗓️ Оберіть одну або декілька подій:", reply_markup=markup)
+    user_data[chat_id] = {'events': []}
+    bot.send_message(chat_id, "🎉 Вітаю! Оберіть події, в яких плануєте участь:", reply_markup=generate_event_keyboard())
 
-@bot.callback_query_handler(func=lambda call: True)
+@bot.callback_query_handler(func=lambda call: call.data.startswith("event_") or call.data == "done")
 def handle_event_selection(call):
     chat_id = call.message.chat.id
     if call.data == "done":
-        bot.send_message(chat_id, "💃 Скільки танцювальних команд ви плануєте зареєструвати?")
-        bot.register_next_step_handler(call.message, ask_teams)
+        bot.send_message(chat_id, "✍️ Скільки команд плануєте зареєструвати?")
+        bot.register_next_step_handler(call.message, get_teams)
+        return
+
+    index = int(call.data.split("_")[1])
+    event = events_list[index]
+    if event not in user_data[chat_id]['events']:
+        user_data[chat_id]['events'].append(event)
+        bot.answer_callback_query(call.id, text=f"Додано: {event}")
     else:
-        if call.data not in user_data[chat_id]["events"]:
-            user_data[chat_id]["events"].append(call.data)
-        bot.answer_callback_query(call.id, f"✅ Обрано: {call.data}")
+        bot.answer_callback_query(call.id, text="Вже обрано")
 
-def ask_teams(message):
+def get_teams(message):
     chat_id = message.chat.id
-    user_data[chat_id]["teams"] = message.text
-    bot.send_message(chat_id, "👥 Орієнтовна кількість учасників:")
-    bot.register_next_step_handler(message, ask_participants)
+    user_data[chat_id]['teams'] = message.text
+    bot.send_message(chat_id, "👥 Орієнтовна кількість учасників?")
+    bot.register_next_step_handler(message, get_participants)
 
-def ask_participants(message):
+def get_participants(message):
     chat_id = message.chat.id
-    user_data[chat_id]["participants"] = message.text
-    bot.send_message(chat_id, "🏙️ Ваше місто:")
-    bot.register_next_step_handler(message, ask_city)
+    user_data[chat_id]['participants'] = message.text
+    bot.send_message(chat_id, "🏙 Ваше місто:")
+    bot.register_next_step_handler(message, get_city)
 
-def ask_city(message):
+def get_city(message):
     chat_id = message.chat.id
-    user_data[chat_id]["city"] = message.text
+    user_data[chat_id]['city'] = message.text
     bot.send_message(chat_id, "🏫 Назва студії:")
-    bot.register_next_step_handler(message, ask_studio)
+    bot.register_next_step_handler(message, get_studio)
 
-def ask_studio(message):
+def get_studio(message):
     chat_id = message.chat.id
-    user_data[chat_id]["studio"] = message.text
+    user_data[chat_id]['studio'] = message.text
     bot.send_message(chat_id, "👤 Ваше ПІБ:")
-    bot.register_next_step_handler(message, ask_name)
+    bot.register_next_step_handler(message, get_name)
 
-def ask_name(message):
+def get_name(message):
     chat_id = message.chat.id
-    user_data[chat_id]["name"] = message.text
-    bot.send_message(chat_id, "📞 Телефон (Telegram, WhatsApp):")
-    bot.register_next_step_handler(message, ask_phone)
+    user_data[chat_id]['name'] = message.text
+    bot.send_message(chat_id, "📞 Телефон (Telegram / WhatsApp):")
+    bot.register_next_step_handler(message, get_phone)
 
-def ask_phone(message):
+def get_phone(message):
     chat_id = message.chat.id
-    user_data[chat_id]["phone"] = message.text
+    user_data[chat_id]['phone'] = message.text
     bot.send_message(chat_id, "📸 Instagram:")
-    bot.register_next_step_handler(message, ask_instagram)
+    bot.register_next_step_handler(message, get_instagram)
 
-def ask_instagram(message):
+def get_instagram(message):
     chat_id = message.chat.id
-    user_data[chat_id]["instagram"] = message.text
+    user_data[chat_id]['instagram'] = message.text
     bot.send_message(chat_id, "📧 Email:")
-    bot.register_next_step_handler(message, finish)
+    bot.register_next_step_handler(message, get_email)
 
-def finish(message):
+def get_email(message):
     chat_id = message.chat.id
-    user_data[chat_id]["email"] = message.text
-    promo_code = str(random.randint(100000, 999999))
-    user_data[chat_id]["promo"] = promo_code
-    data = user_data[chat_id]
+    user_data[chat_id]['email'] = message.text
+    promo = str(chat_id)[-6:]
+    user_data[chat_id]['promo'] = promo
 
     sheet.append_row([
-        ", ".join(data["events"]),
-        data["teams"],
-        data["participants"],
-        data["city"],
-        data["studio"],
-        data["name"],
-        data["phone"],
-        data["instagram"],
-        data["email"],
-        data["promo"]
+        ", ".join(user_data[chat_id]['events']),
+        user_data[chat_id]['studio'],
+        user_data[chat_id]['city'],
+        user_data[chat_id]['participants'],
+        user_data[chat_id]['teams'],
+        user_data[chat_id]['name'],
+        user_data[chat_id]['phone'],
+        user_data[chat_id]['instagram'],
+        user_data[chat_id]['email'],
+        promo
     ])
 
-    bot.send_message(chat_id, f"✅ Дані надіслані!
-🎁 Ваш промокод: `{promo_code}`", parse_mode="Markdown")
-
-    bot.send_message(ADMIN_ID, f"📥 Нова заявка від @{message.from_user.username or 'без ніка'}:
-"
-                                f"Події: {data['events']}
-Студія: {data['studio']}
-"
-                                f"Місто: {data['city']}
-Учасників: {data['participants']}
-"
-                                f"Команди: {data['teams']}
-ПІБ: {data['name']}
-"
-                                f"Телефон: {data['phone']}
-Instagram: {data['instagram']}
-"
-                                f"Email: {data['email']}
-Промокод: {data['promo']}")
+    bot.send_message(chat_id, f"""✅ Дані надіслані!
+🗓 Події: {", ".join(user_data[chat_id]['events'])}
+🏫 Студія: {user_data[chat_id]['studio']}
+🏙 Місто: {user_data[chat_id]['city']}
+👥 Учасників: {user_data[chat_id]['participants']}
+👯‍♀️ Команди: {user_data[chat_id]['teams']}
+👤 ПІБ: {user_data[chat_id]['name']}
+📞 Телефон: {user_data[chat_id]['phone']}
+📸 Instagram: {user_data[chat_id]['instagram']}
+📧 Email: {user_data[chat_id]['email']}
+🎁 Промокод: `{promo}`""", parse_mode="Markdown")
 
 bot.infinity_polling()
