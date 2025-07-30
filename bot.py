@@ -12,7 +12,7 @@ token = os.environ.get("TELEGRAM_TOKEN")  # має збігатися з клю�
 if not token:
     raise Exception("TELEGRAM_TOKEN is not set")
 
-print("TELEGRAM_TOKEN:", token)  # тимчасово для перевірки
+print("TOKEN:", token)  # тимчасово для перевірки
 
 bot = telebot.TeleBot(token)
 
